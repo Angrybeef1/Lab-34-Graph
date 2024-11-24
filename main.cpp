@@ -16,6 +16,13 @@ const int INF = numeric_limits<int>::max();
 
 struct Edge {
     int src, dest, weight;
+
+    //for edge creation
+    Edge (int s, int d, int w) : src(s), dest (d),weight(w){}
+
+    bool operator<(const Edge& other) const {
+        return weight < other.weight;
+    }
 };
 
 struct Station {
@@ -25,10 +32,41 @@ struct Station {
 
 typedef pair<int, int> Pair;
 
+class Tree {
+    vector<int> parent, rank;
+public:
+    Tree(int n){
+        parent.resize(n);
+        rank.resize(n);
+        for (int i = 0; i < n; i++){
+            parent[i] = i;
+            rank[i] = 0;
+        }
+    }
+
+    int find (int x){
+        if(parent[x] != x)
+            parent[x] = find(parent[x]);
+        return parent[x];
+    }
+     void unite(int x, int y) {
+        int px = find(x), py = find(y);
+        if(rank[px] < rank[py])
+            parent[px] = py;
+        else if(rank[px] > rank[py])
+            parent[py] = px;
+        else {
+            parent[py] = px;
+            rank[px]++;
+        }
+    }
+};
+
 class MetroNetwork {
 private:
     vector<vector<Pair>> adjList;
     vector<Station> stations;
+    vector<Edge> allEdges;
 
 public:
     // Graph Constructor
@@ -43,6 +81,7 @@ public:
             adjList[edge.src].push_back(make_pair(edge.dest, edge.weight));
             // for an undirected graph, add an edge from dest to src also
             adjList[edge.dest].push_back(make_pair(edge.src, edge.weight));
+            allEdges.push_back(Edge(edge.src, edge.dest, edge.weight));
         }
     }
 
@@ -159,6 +198,34 @@ public:
         }
         cout << endl;
     }
+
+    void findMST() {
+        Tree tr(SIZE);
+        vector<Edge> mst;
+        int totalWeight = 0;
+        
+        // Sort edges by weight
+        vector<Edge> sortedEdges = allEdges;
+        sort(sortedEdges.begin(), sortedEdges.end());
+        
+        cout << "Minimum Cost Metro Network (MST):" << endl;
+        cout << "Purpose: Identifying critical connections for maintenance" << endl;
+        cout << string(80, '=') << endl;
+        
+        // Kruskal's algorithm
+        for (const Edge& edge : sortedEdges) {
+            if (tr.find(edge.src) != tr.find(edge.dest)) {
+                tr.unite(edge.src, edge.dest);
+                mst.push_back(edge);
+                totalWeight += edge.weight;
+                
+                cout << "Edge from " << edge.src << " to " << edge.dest 
+                     << " with travel time: " << edge.weight << " mins" << endl;
+            }
+        }
+        
+        cout << "\nTotal minimum network travel time: " << totalWeight << " minutes" << endl;
+    }
 };
 
 
@@ -195,6 +262,9 @@ int main() {
 
     //shortest path
     metro.shortestPaths(0);
+
+    //the tree
+    metro.findMST();
 
     return 0;
 }
