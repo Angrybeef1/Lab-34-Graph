@@ -70,7 +70,7 @@ private:
 
 public:
     // Graph Constructor
-    MetroNetwork(vector<Edge> const &edges, vector<Station> const &stationInfo) {
+    MetroNetwork(const vector<Edge>& edges, const vector<Station>& stationInfo) {
         // resize the vector to hold SIZE elements of type vector<Edge>
         adjList.resize(SIZE);
         stations = stationInfo;
@@ -81,7 +81,7 @@ public:
             adjList[edge.src].push_back(make_pair(edge.dest, edge.weight));
             // for an undirected graph, add an edge from dest to src also
             adjList[edge.dest].push_back(make_pair(edge.src, edge.weight));
-            allEdges.push_back(Edge(edge.src, edge.dest, edge.weight));
+            allEdges.push_back(edge);
         }
     }
 
@@ -90,9 +90,9 @@ public:
         cout << "Metro Network Topology:" << endl;
         cout << string(80, '=') << endl;
         
-        for (int i = 0; i < adjList.size(); i++) {
+        for (int i = 0; i < SIZE; i++) {
             cout << "Station " << i << " (" << stations[i].name << " - " << stations[i].type << ") connects to:" << endl;
-            for (Pair v : adjList[i]) {
+            for (const Pair& v : adjList[i]) {
                 cout << "  → Station " << v.first << " (" << stations[v.first].name 
                      << ") - Travel Time: " << v.second << " mins" << endl;
             }
@@ -131,7 +131,7 @@ public:
                     }
                 }
                 
-                sort(neighbors.begin(), neighbors.end(), greater<int>());
+                sort(neighbors.begin(), neighbors.end());
                 for (int neighbor : neighbors) {
                     stack.push(neighbor);
                 }
@@ -143,7 +143,7 @@ public:
     // BFS implementation
     void BFS(int startStation) {
         vector<bool> visited(SIZE, false);
-        cout << "Station Accessibility Analysis (BFS) from Station " << startStation 
+        cout << "\nStation Accessibility Analysis (BFS) from Station " << startStation 
              << " (" << stations[startStation].name << "):" << endl;
         cout << "Purpose: Analyzing passenger flow and accessibility" << endl;
         cout << string(80, '=') << endl;
@@ -158,7 +158,7 @@ public:
                  << " - " << stations[current].type << ")" << endl;
             queue.pop();
             
-            for (Pair neighbor : adjList[current]) {
+            for (const Pair& neighbor : adjList[current]) {
                 if (!visited[neighbor.first]) {
                     cout << "  → Connected to Station " << neighbor.first 
                          << " (" << stations[neighbor.first].name 
@@ -173,28 +173,41 @@ public:
 
     void shortestPaths (int source) {
         vector<int> dist(SIZE, INF);
-        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+        vector<bool> visited(SIZE, false);
+        priority_queue<Pair, vector<Pair>, greater<Pair>> pq;
 
         dist[source] = 0;
         pq.push(make_pair(0, source));
+
+        cout << "\nShortest path travel times from " << stations[source].name 
+             << " (Station " << source << "):" << endl;
+        cout << string(80, '=') << endl;
 
         while (!pq.empty()){
             int u = pq.top().second;
             pq.pop();
 
+            if (visited[u]) continue;  
+            visited[u] = true;
+
             for (const auto& neighbor : adjList[u]){
                 int v = neighbor.first;
                 int weight = neighbor.second;
 
-                if (dist[v] > dist[u] + weight) {
+                if (!visited[v] && dist[v] > dist[u] + weight) {
                     dist[v] = dist [u] + weight;
                     pq.push(make_pair(dist[v], v));
                 }
             }
         }
-        cout << "Shortest path travel times from " << stations[source].name << " (Station " << source << "):" << endl;
+        
         for (int i = 0; i < SIZE; i++) {
-            cout << source << " -> " << i << " : " << dist[i] << endl;
+            if (dist[i] == INF){
+                cout << "Station " << source << " -> " << i << " : No path exists" << endl;
+            }
+            else {
+                cout << "Station " << source << " -> " << i << " : " << dist[i] << " mins" << endl;
+            }
         }
         cout << endl;
     }
@@ -208,11 +221,11 @@ public:
         vector<Edge> sortedEdges = allEdges;
         sort(sortedEdges.begin(), sortedEdges.end());
         
-        cout << "Minimum Cost Metro Network (MST):" << endl;
+        cout << "\nMinimum Cost Metro Network (MST):" << endl;
         cout << "Purpose: Identifying critical connections for maintenance" << endl;
         cout << string(80, '=') << endl;
         
-        // Kruskal's algorithm
+        
         for (const Edge& edge : sortedEdges) {
             if (tr.find(edge.src) != tr.find(edge.dest)) {
                 tr.unite(edge.src, edge.dest);
@@ -225,8 +238,10 @@ public:
         }
         
         cout << "\nTotal minimum network travel time: " << totalWeight << " minutes" << endl;
+        cout << endl;
     }
 };
+
 
 
 int main() {
@@ -244,13 +259,78 @@ int main() {
     };
     vector<Edge> edges = {
         // (x, y, w) —> edge from x to y having weight w
-        {0,1,12},{0,2,8},{0,3,21},{2,3,6},{2,6,2},{5,6,6},{4,5,9},{1,1,1},{2,2,2},{3,3,3},{4,4,4},{5,5,5},{6,6,6}
+        {0,1,12}, {0,2,8}, {0,3,21}, {2,3,6}, {2,6,2}, 
+        {5,6,6}, {4,5,9}, {1,4,10}, {7,8,15}, {6,8,3}
     };
 
     // Creates graph
     MetroNetwork metro(edges, stations);
 
-    // Prints adjacency list representation of graph
+    int choice;
+    do {
+        cout << "\nMetro Network Management System\n";
+        cout << string(80, '=') << endl;
+        cout << "[1] Display Metro Network Topology\n";
+        cout << "[2] Analyze Passenger Flow (BFS)\n";
+        cout << "[3] Plan Emergency Routes (DFS)\n";
+        cout << "[4] Calculate Shortest Travel Times\n";
+        cout << "[5] Find Minimum Cost Network\n";
+        cout << "[0] Exit\n";
+        cout << string(80, '-') << endl;
+        cout << "Enter your choice: ";
+        
+        while(!(cin >> choice)) {
+            cin.clear();
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cout << "Invalid input. Please enter a number (0-5): ";
+        }
+        
+        switch(choice) {
+            case 1:
+                metro.printNetwork();
+                break;
+                
+            case 2:
+                 for(int i = 0; i < SIZE; i++) {
+                    metro.BFS(i);
+                }
+                break;
+                           
+            case 3:
+                for(int i = 0; i < SIZE; i++) {
+                    metro.DFS(i);
+                }
+                break;
+                
+            case 4:
+                for(int i = 0; i < SIZE; i++) {
+                    metro.shortestPaths(i);
+                }
+                break;
+                
+            case 5:
+                metro.findMST();
+                break;
+                
+            case 0:
+                cout << "\nExiting Metro Network Management System. Goodbye!\n";
+                break;
+                
+            default:
+                cout << "\nInvalid choice. Please select a valid option (0-5).\n";
+        }
+        
+        if(choice != 0) {
+            cout << "\nPress Enter to continue...";
+            cin.ignore(numeric_limits<streamsize>::max(), '\n');
+            cin.get();
+        }
+        
+    } while(choice != 0);
+
+    
+
+    /*// Prints adjacency list representation of graph
     metro.printNetwork();
 
     
@@ -263,8 +343,8 @@ int main() {
     //shortest path
     metro.shortestPaths(0);
 
-    //the tree
-    metro.findMST();
+    //the tre
+    metro.findMST();*/
 
     return 0;
 }
