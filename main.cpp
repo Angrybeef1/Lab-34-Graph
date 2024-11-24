@@ -5,119 +5,130 @@
 #include <queue>
 #include <stack>
 #include <algorithm>
+#include <iomanip>
 
 
 using namespace std;
 
-const int SIZE = 7;
+const int SIZE = 9;
 
 struct Edge {
     int src, dest, weight;
 };
 
-typedef pair<int, int> Pair;  // Creates alias 'Pair' for the pair<int,int> data type
+struct Station {
+    string name;
+    string type;
+};
 
-class Graph {
+typedef pair<int, int> Pair;
+
+class MetroNetwork {
+private:
+    vector<vector<Pair>> adjList;
+    vector<Station> stations;
+
 public:
     // a vector of vectors of Pairs to represent an adjacency list
-    vector<vector<Pair>> adjList;
+    //vector<vector<Pair>> adjList;
 
     // Graph Constructor
-    Graph(vector<Edge> const &edges) {
+    MetroNetwork(vector<Edge> const &edges, vector<Station> const &stationInfo) {
         // resize the vector to hold SIZE elements of type vector<Edge>
         adjList.resize(SIZE);
+        stations = stationInfo;
 
         // add edges to the directed graph
         for (auto &edge: edges) {
-            int src = edge.src;
-            int dest = edge.dest;
-            int weight = edge.weight;
+            //int src = edge.src;
+            //int dest = edge.dest;
+            //int weight = edge.weight;
 
             // insert at the end
-            adjList[src].push_back(make_pair(dest, weight));
+            adjList[edge.src].push_back(make_pair(edge.dest, edge.weight));
             // for an undirected graph, add an edge from dest to src also
-            adjList[dest].push_back(make_pair(src, weight));
+            adjList[edge.dest].push_back(make_pair(edge.src, edge.weight));
         }
     }
 
     // Print the graph's adjacency list
-    void printGraph() {
-        cout << "Graph's adjacency list:" << endl;
+   void printNetwork() {
+        cout << "Metro Network Topology:" << endl;
+        cout << string(80, '=') << endl;
+        
         for (int i = 0; i < adjList.size(); i++) {
-            cout << i << " --> ";
-            for (Pair v : adjList[i])
-                cout << "(" << v.first << ", " << v.second << ") ";
+            cout << "Station " << i << " (" << stations[i].name << " - " << stations[i].type << ") connects to:" << endl;
+            for (Pair v : adjList[i]) {
+                cout << "  → Station " << v.first << " (" << stations[v.first].name 
+                     << ") - Travel Time: " << v.second << " mins" << endl;
+            }
             cout << endl;
         }
     }
 
     // DFS implementation
-    void DFS(int startVertex) {
+    void DFS(int startStation) {
         vector<bool> visited(SIZE, false);
         stack<int> stack;
         
-        cout << "DFS starting from vertex " << startVertex << ":" << endl;
-        stack.push(startVertex);
+        cout << "\nEmergency Route Inspection (DFS) from Station " << startStation 
+             << " (" << stations[startStation].name << "):" << endl;
+        cout << "Purpose: Emergency response route mapping" << endl;
+        cout << string(80, '=') << endl;
+        
+        stack.push(startStation);
         
         while (!stack.empty()) {
-            int currentVertex = stack.top();
+            int current = stack.top();
             stack.pop();
             
-            if (!visited[currentVertex]) {
-                visited[currentVertex] = true;
-                cout << currentVertex << " ";
+            if (!visited[current]) {
+                visited[current] = true;
+                cout << "Checking Station " << current << " (" << stations[current].name 
+                     << " - " << stations[current].type << ")" << endl;
                 
-                // Get all unvisited neighbors
                 vector<int> neighbors;
-                for (const auto& p : adjList[currentVertex]) {
+                for (const auto& p : adjList[current]) {
                     if (!visited[p.first]) {
+                        cout << "  → Emergency route to Station " << p.first 
+                             << " (" << stations[p.first].name << ") - ETA: " 
+                             << p.second << " mins" << endl;
                         neighbors.push_back(p.first);
                     }
                 }
                 
-                // Sort neighbors in descending order
-                std::sort(neighbors.begin(), neighbors.end(), std::greater<int>());
-                
-                // Special case for vertex 0: push 1, 2, 3 in specific order
-                if (currentVertex == 0) {
-                    for (int i = neighbors.size() - 1; i >= 0; i--) {
-                        stack.push(neighbors[i]);
-                    }
-                }
-                // Special case for vertex 2: push neighbors in specific order
-                else if (currentVertex == 2) {
-                    for (int neighbor : neighbors) {
-                        stack.push(neighbor);
-                    }
-                }
-                // For other vertices, push in descending order
-                else {
-                    for (int neighbor : neighbors) {
-                        stack.push(neighbor);
-                    }
+                sort(neighbors.begin(), neighbors.end(), greater<int>());
+                for (int neighbor : neighbors) {
+                    stack.push(neighbor);
                 }
             }
         }
         cout << endl;
     }
 
-
     // BFS implementation
-     void BFS(int startVertex) {
+    void BFS(int startStation) {
         vector<bool> visited(SIZE, false);
-        cout << "BFS starting from vertex 0:" << endl;
+        cout << "Station Accessibility Analysis (BFS) from Station " << startStation 
+             << " (" << stations[startStation].name << "):" << endl;
+        cout << "Purpose: Analyzing passenger flow and accessibility" << endl;
+        cout << string(80, '=') << endl;
         
         queue<int> queue;
-        visited[startVertex] = true;
-        queue.push(startVertex);
+        visited[startStation] = true;
+        queue.push(startStation);
         
         while (!queue.empty()) {
-            int currentVertex = queue.front();
-            cout << currentVertex << " ";
+            int current = queue.front();
+            cout << "Analyzing Station " << current << " (" << stations[current].name 
+                 << " - " << stations[current].type << ")" << endl;
             queue.pop();
             
-            for (Pair neighbor : adjList[currentVertex]) {
+            for (Pair neighbor : adjList[current]) {
                 if (!visited[neighbor.first]) {
+                    cout << "  → Connected to Station " << neighbor.first 
+                         << " (" << stations[neighbor.first].name 
+                         << ") - Travel Time: " << neighbor.second << " mins" << endl;
                     visited[neighbor.first] = true;
                     queue.push(neighbor.first);
                 }
@@ -127,25 +138,37 @@ public:
     }
 };
 
+
 int main() {
     // Creates a vector of graph edges/weights
+    vector<Station> stations = {
+        {"Central Terminal", "Major Hub"},
+        {"City Square", "Transfer Station"},
+        {"Business District", "Express Stop"},
+        {"University", "Local Station"},
+        {"Sports Complex", "Local Station"},
+        {"Airport Express", "Major Hub"},
+        {"Shopping District", "Transfer Station"},
+        {"Tech Park", "Express Stop"},
+        {"Medical Center", "Transfer Station"}
+    };
     vector<Edge> edges = {
         // (x, y, w) —> edge from x to y having weight w
         {0,1,12},{0,2,8},{0,3,21},{2,3,6},{2,6,2},{5,6,6},{4,5,9},{1,1,1},{2,2,2},{3,3,3},{4,4,4},{5,5,5},{6,6,6}
     };
 
     // Creates graph
-    Graph graph(edges);
+    MetroNetwork metro(edges, stations);
 
     // Prints adjacency list representation of graph
-    graph.printGraph();
+    metro.printNetwork();
 
     
     // Perform DFS starting from vertex 0
-    graph.DFS(0);
+    metro.DFS(0);
 
     // Perform BFS starting from vertex 0
-    graph.BFS(0);
+    metro.BFS(0);
 
     return 0;
 }
