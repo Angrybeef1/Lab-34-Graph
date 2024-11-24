@@ -6,11 +6,13 @@
 #include <stack>
 #include <algorithm>
 #include <iomanip>
+#include <limits>
 
 
 using namespace std;
 
 const int SIZE = 9;
+const int INF = numeric_limits<int>::max();
 
 struct Edge {
     int src, dest, weight;
@@ -29,9 +31,6 @@ private:
     vector<Station> stations;
 
 public:
-    // a vector of vectors of Pairs to represent an adjacency list
-    //vector<vector<Pair>> adjList;
-
     // Graph Constructor
     MetroNetwork(vector<Edge> const &edges, vector<Station> const &stationInfo) {
         // resize the vector to hold SIZE elements of type vector<Edge>
@@ -40,10 +39,6 @@ public:
 
         // add edges to the directed graph
         for (auto &edge: edges) {
-            //int src = edge.src;
-            //int dest = edge.dest;
-            //int weight = edge.weight;
-
             // insert at the end
             adjList[edge.src].push_back(make_pair(edge.dest, edge.weight));
             // for an undirected graph, add an edge from dest to src also
@@ -136,6 +131,34 @@ public:
         }
         cout << endl;
     }
+
+    void shortestPaths (int source) {
+        vector<int> dist(SIZE, INF);
+        priority_queue<pair<int, int>, vector<pair<int, int>>, greater<pair<int, int>>> pq;
+
+        dist[source] = 0;
+        pq.push(make_pair(0, source));
+
+        while (!pq.empty()){
+            int u = pq.top().second;
+            pq.pop();
+
+            for (const auto& neighbor : adjList[u]){
+                int v = neighbor.first;
+                int weight = neighbor.second;
+
+                if (dist[v] > dist[u] + weight) {
+                    dist[v] = dist [u] + weight;
+                    pq.push(make_pair(dist[v], v));
+                }
+            }
+        }
+        cout << "Shortest path travel times from " << stations[source].name << " (Station " << source << "):" << endl;
+        for (int i = 0; i < SIZE; i++) {
+            cout << source << " -> " << i << " : " << dist[i] << endl;
+        }
+        cout << endl;
+    }
 };
 
 
@@ -169,6 +192,9 @@ int main() {
 
     // Perform BFS starting from vertex 0
     metro.BFS(0);
+
+    //shortest path
+    metro.shortestPaths(0);
 
     return 0;
 }
